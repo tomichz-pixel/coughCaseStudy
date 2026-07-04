@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>症例学習 - 咳の診方【富山呼吸器講習会】</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --primary-color: #2ecc71; /* 正解・健康のグリーン */
+            --accent-color: #3498db;  /* アジアンブルー */
+            --warning-color: #e67e22; /* 検査・アラートのオレンジ */
+            --danger-color: #e74c3c;  /* 不正解のレッド */
+            --purple-color: #9b59b6;  /* 診断のパープル */
+            --rose-color: #e91e63;    /* 治療のローズ */
+            --active-shadow: 0 10px 20px rgba(46, 204, 113, 0.2);
+            --normal-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 10px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid #e1e8ed;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
+            color: #ffffff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--primary-color);
+        }
+
+        .header h1 {
+            font-size: clamp(16px, 4vw, 20px);
+            font-weight: 700;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .full-open-btn {
+            background: var(--warning-color);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .full-open-btn:hover {
+            background: #d35400;
+        }
+
+        .full-open-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .stats-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-badge span {
+            color: var(--danger-color);
+            font-weight: 700;
+        }
+
+        /* メインボード */
+        .board {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 1層目: 患者プロファイル一覧 */
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .patients-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .patients-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .patient-card {
+            background: #ffffff;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 160px;
+            box-shadow: var(--normal-shadow);
+        }
+
+        .patient-card:hover {
+            transform: translateY(-2px);
+            border-color: #bdc3c7;
+        }
+
+        .patient-card.active {
+            border-color: var(--primary-color);
+            background: #f4fbf7;
+            box-shadow: var(--active-shadow);
+        }
+
+        .patient-card.solved {
+            border-color: #bdc3c7;
+            background: #f8f9fa;
+            opacity: 0.7;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .patient-info {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+
+        .patient-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 6px;
+            line-height: 1.2;
+        }
+
+        .patient-profile-snippet {
+            font-size: 11px;
+            color: #555;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.35;
+        }
+
+        /* 各種選択状態スロットの表示 */
+        .slots-indicator-inline {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            margin-top: 10px;
+            border-top: 1px dashed #e1e8ed;
+            padding-top: 8px;
+        }
+
+        .slot-badge {
+            flex: 1;
+            text-align: center;
+            padding: 4px 2px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            background: #f8f9fa;
+            color: #bdc3c7;
+            border: 1px solid #e1e8ed;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        /* 各種アクティブ状態 */
+        .slot-badge.active-inq {
+            background: #eef2f7;
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .slot-badge.active-tst {
+            background: #fff8f3;
+            color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+        .slot-badge.active-dia {
+            background: #f5effb;
+            color: var(--purple-color);
+            border-color: var(--purple-color);
+        }
+        .slot-badge.active-trx {
+            background: #fff0f5;
+            color: var(--rose-color);
+            border-color: var(--rose-color);
+        }
+        .slot-badge.solved {
+            background: #eefdf4;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            opacity: 0.9;
+        }
+
+        .confirm-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
+            background: #bdc3c7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            pointer-events: none;
+        }
+
+        .confirm-btn.active {
+            background: var(--primary-color);
+            pointer-events: auto;
+            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+        }
+
+        .confirm-btn.active:hover {
+            background: #27ae60;
+        }
+
+        .patient-card.solved .confirm-btn {
+            display: none;
+        }
+
+        .solved-badge {
+            display: none;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .patient-card.solved .solved-badge {
+            display: block;
+        }
+
+        /* 2層目 & 3層目: トグルボタン領域 */
+        .toggles-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .toggles-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .toggle-box {
+            background: #ffffff;
+            border: 1px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: var(--normal-shadow);
+        }
+
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            background: #f8f9fa;
+            border: 1.5px solid #dcdde1;
+            padding: 8px 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 42px;
+            user-select: none;
+        }
+
+        .toggle-btn:hover {
+            background: #f1f2f6;
+            border-color: #b2bec3;
+        }
+
+        /* 問診ボタンの選択状態 */
+        .inquiry-box .toggle-btn.selected {
+            background: #eef2f7;
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(52, 152, 219, 0.15);
+        }
+
+        /* 検査ボタンの選択状態 */
+        .test-box .toggle-btn.selected {
+            background: #fff8f3;
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(230, 126, 34, 0.15);
+        }
+
+        /* 4層目 & 5層目: 裏返しフリップカード領域 */
+        .decks-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .deck-wrapper {
+            background: #ffffff;
+            border: 1px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: var(--normal-shadow);
+        }
+
+        .deck {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .card {
+            height: 56px;
+            cursor: pointer;
+            perspective: 1000px;
+            position: relative;
+            width: 100%;
+        }
+
+        .card-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: clamp(9px, 2vw, 11px);
+            line-height: 1.15;
+        }
+
+        .card-front {
+            background: #2c3e50;
+            color: #ffffff;
+            border: 1.5px solid #2c3e50;
+        }
+
+        .diagnosis-deck .card-front {
+            background: linear-gradient(135deg, #6c5ce7, #a8a5e6);
+            border-color: #6c5ce7;
+        }
+
+        .next-plan-deck .card-front {
+            background: linear-gradient(135deg, #fd79a8, #feb3c4);
+            border-color: #fd79a8;
+        }
+
+        .card-back {
+            background: #ffffff;
+            color: #2c3e50;
+            transform: rotateY(180deg);
+            border: 1.5px solid #dcdde1;
+        }
+
+        /* カードのフチの色 */
+        .diagnosis-deck .card-back {
+            border-bottom: 4px solid #6c5ce7;
+        }
+
+        .next-plan-deck .card-back {
+            border-bottom: 4px solid #fd79a8;
+        }
+
+        /* 選択されているフリップカード */
+        .card.selected .card-inner {
+            box-shadow: 0 0 0 3px var(--primary-color);
+        }
+
+        .card.matched {
+            opacity: 0;
+            transform: scale(0.9);
+            pointer-events: none;
+            transition: var(--transition);
+        }
+
+        /* エラーアニメーション */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+            border-color: var(--danger-color) !important;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3) !important;
+        }
+
+        /* モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid #e1e8ed;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header.correct { color: var(--primary-color); }
+        .modal-header.incorrect { color: var(--danger-color); }
+
+        .modal-body {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .modal-body b {
+            color: #2c3e50;
+        }
+
+        .modal-note {
+            background: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+            padding: 10px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12.5px;
+            line-height: 1.45;
+            margin-top: 10px;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="header">
+        <h1>症例学習 - 咳の診方</h1>
+        <div class="header-controls">
+            <button class="full-open-btn" id="full-open-btn">フルオープン（5秒）</button>
+            <div class="stats-badge">ミス: <span id="miss-count">0</span> 回</div>
+        </div>
+    </div>
+    
+    <div class="board">
+        <!-- 1層目: 患者選択エリア -->
+        <div>
+            <div class="section-title">1層目: 模擬患者を選択してください</div>
+            <div class="patients-grid" id="patients-container"></div>
+        </div>
+
+        <!-- 2層目 & 3層目: 問診 & 検査 トグル領域 -->
+        <div class="toggles-section">
+            <!-- 2層目: 問診 -->
+            <div class="toggle-box inquiry-box">
+                <div class="section-title">2層目: 問診・身体診察で確認すべき所見 (重複選択可能)</div>
+                <div class="toggle-grid" id="inquiry-container"></div>
+            </div>
+
+            <!-- 3層目: 検査 -->
+            <div class="toggle-box test-box">
+                <div class="section-title">3層目: 初診時に行うべき推奨検査 (複数選択可)</div>
+                <div class="toggle-grid" id="test-container"></div>
+            </div>
+        </div>
+
+        <!-- 4層目 & 5層目: デッキ領域 -->
+        <div class="decks-section">
+            <!-- 4層目: 診断 -->
+            <div class="deck-wrapper diagnosis-deck">
+                <div class="section-title">4層目: 最も確率の高い診断名 (めくって選択)</div>
+                <div class="deck" id="diagnosis-deck"></div>
+            </div>
+
+            <!-- 5層目: 治療 -->
+            <div class="deck-wrapper next-plan-deck">
+                <div class="section-title">5層目: 初期治療・追加検査のアプローチ (めくって選択)</div>
+                <div class="deck" id="next-plan-deck"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ポップアップモーダル -->
+<div class="modal" id="game-modal">
+    <div class="modal-content">
+        <div class="modal-header" id="modal-title"></div>
+        <div class="modal-body" id="modal-body"></div>
+        <button class="modal-btn" id="modal-btn">次へ</button>
+    </div>
+</div>
+
+<!-- 外部データファイルの読み込み -->
+<script src="data.js"></script>
+<script>
+(function() {
+    // 咳嗽データが正常に読み込めているか確認
+    const casesData = typeof coughCasesData !== 'undefined' ? coughCasesData : {};
+    const testOptionsList = typeof testOptions !== 'undefined' ? testOptions : [];
+
+    const caseKeys = Object.keys(casesData);
+    let activeIndex = 0; // 現在選択中の患者インデックス (0〜3)
+    let selectedCases = []; // ランダムに選ばれた4つの症例オブジェクト
+    let miss = 0;
+    
+    // プレイヤーの各患者に対する選択状態
+    let selections = [
+        { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false },
+        { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false },
+        { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false },
+        { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false }
+    ];
+
+    // DOM要素のキャッシュ
+    const patientsContainer = document.getElementById('patients-container');
+    const inquiryContainer = document.getElementById('inquiry-container');
+    const testContainer = document.getElementById('test-container');
+    const diagnosisDeck = document.getElementById('diagnosis-deck');
+    const nextPlanDeck = document.getElementById('next-plan-deck');
+    const missCountEl = document.getElementById('miss-count');
+    const fullOpenBtn = document.getElementById('full-open-btn');
+
+    const modal = document.getElementById('game-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalBtn = document.getElementById('modal-btn');
+
+    // 配列のシャッフル
+    function shuffle(a) {
+        return [...a].sort(() => Math.random() - 0.5);
+    }
+
+    // ゲーム初期化
+    function initGame() {
+        miss = 0;
+        missCountEl.textContent = miss;
+        activeIndex = 0;
+        
+        // 9症例から、正解問診のユニーク合計が6以下になる組み合わせを動的にフィルタリングして選出
+        let selectedKeys = [];
+        let attempts = 0;
+        while (attempts < 100) {
+            const shuffledKeys = shuffle(caseKeys).slice(0, 4);
+            const tempCases = shuffledKeys.map(key => casesData[key]);
+            const uniqueInquiries = [...new Set(tempCases.reduce((acc, c) => acc.concat(c.inquiry), []))];
+            
+            // 6つ以下であることを条件にする
+            if (uniqueInquiries.length <= 6) {
+                selectedKeys = shuffledKeys;
+                selectedCases = tempCases;
+                break;
+            }
+            attempts++;
+        }
+
+        // フォールバック（通常は不要）
+        if (selectedKeys.length === 0) {
+            selectedKeys = shuffle(caseKeys).slice(0, 4);
+            selectedCases = selectedKeys.map(key => casesData[key]);
+        }
+
+        // 各症例に対して一意の代表nextPlanを選定して割り当てる
+        assignNextPlans();
+
+        // プレイヤーの選択状態をリセット
+        selections = [
+            { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false },
+            { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false },
+            { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false },
+            { inquiry: [], tests: [], diagnosis: null, nextPlan: null, solved: false }
+        ];
+
+        // 2・3層目のトグルボタン生成
+        renderToggles();
+
+        // 4・5層目のフリップカード生成
+        renderDecks();
+
+        // 患者プロファイルカードのレンダリング
+        renderPatients();
+
+        // 選択状態の同期
+        syncSelectionUI();
+
+        // フルオープンボタンの状態初期化
+        if (fullOpenBtn) {
+            fullOpenBtn.disabled = false;
+            fullOpenBtn.textContent = 'フルオープン（5秒）';
+        }
+    }
+
+    // 各選出された症例のnextPlan配列から、重複のない一意のプランを動的に選別する
+    function assignNextPlans() {
+        const selectedPlans = [];
+        selectedCases.forEach((c, idx) => {
+            // 他の症例の全nextPlan要素を抽出
+            const otherPlans = selectedCases
+                .filter((_, i) => i !== idx)
+                .reduce((acc, other) => acc.concat(other.nextPlan), []);
+            
+            // 他の症例に含まれていない一意なプランを探す
+            let uniquePlan = c.nextPlan.find(plan => !otherPlans.includes(plan));
+
+            // もし完全一意なものがなければ、すでに確定した選択プランと重複しないものを探す
+            if (!uniquePlan) {
+                uniquePlan = c.nextPlan.find(plan => !selectedPlans.includes(plan));
+            }
+
+            // それでもなければ配列の先頭を選択
+            if (!uniquePlan) {
+                uniquePlan = c.nextPlan[0];
+            }
+
+            selectedPlans.push(uniquePlan);
+            c._assignedNextPlan = uniquePlan; // 代表プランとして一時プロパティに保持
+        });
+    }
+
+    // トグルボタンの生成
+    function renderToggles() {
+        // --- 2層目: 問診トグルの動的生成 (重複避けて6つ提示) ---
+        inquiryContainer.innerHTML = '';
+        
+        // 選ばれた4症例の必須問診 (正解) をすべて集める (重複排除)
+        const correctInquiries = [...new Set(selectedCases.reduce((acc, c) => acc.concat(c.inquiry), []))];
+        
+        // 全体のプールから、正解以外のダミー候補を抽出
+        const pool = typeof inquiryOptionsPool !== 'undefined' ? inquiryOptionsPool : [];
+        const dummyInquiries = pool.filter(opt => !correctInquiries.includes(opt.key));
+        
+        // 合計6つになるようにダミーから補充 (フィルタリングにより、correctInquiriesは必ず6以下になっています)
+        const neededDummiesCount = Math.max(0, 6 - correctInquiries.length);
+        const selectedDummies = shuffle(dummyInquiries).slice(0, neededDummiesCount);
+        
+        // 正解問診の定義オブジェクトを取得
+        let activeInquiryOptions = correctInquiries
+            .map(key => pool.find(opt => opt.key === key))
+            .filter(Boolean);
+            
+        // ダミーをマージしてシャッフル
+        activeInquiryOptions = shuffle(activeInquiryOptions.concat(selectedDummies));
+
+        activeInquiryOptions.forEach(opt => {
+            const btn = document.createElement('div');
+            btn.className = 'toggle-btn';
+            btn.dataset.key = opt.key;
+            btn.textContent = opt.text;
+            btn.onclick = () => handleInquiryToggle(opt.key);
+            inquiryContainer.appendChild(btn);
+        });
+
+        // --- 3層目: 検査トグル (固定) ---
+        testContainer.innerHTML = '';
+        testOptionsList.forEach(opt => {
+            const btn = document.createElement('div');
+            btn.className = 'toggle-btn';
+            btn.dataset.key = opt.key;
+            btn.textContent = opt.text;
+            btn.onclick = () => handleTestToggle(opt.key);
+            testContainer.appendChild(btn);
+        });
+    }
+
+    // フリップカード（診断・治療nextPlan）の生成
+    function renderDecks() {
+        diagnosisDeck.innerHTML = '';
+        nextPlanDeck.innerHTML = '';
+
+        // 4症例から診断名と割り当てられた一意のネクストプランを抽出してシャッフル
+        const diagValues = shuffle(selectedCases.map(c => c.disease));
+        const nextPlanValues = shuffle(selectedCases.map(c => c._assignedNextPlan));
+
+        diagValues.forEach((val, idx) => {
+            diagnosisDeck.appendChild(createFlipCard(val, 'diagnosis', idx));
+        });
+
+        nextPlanValues.forEach((val, idx) => {
+            nextPlanDeck.appendChild(createFlipCard(val, 'nextPlan', idx));
+        });
+    }
+
+    // フリップカードDOM作成
+    function createFlipCard(val, type, index) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.val = val;
+        card.dataset.type = type;
+
+        card.innerHTML = `
+            <div class="card-inner">
+                <div class="card-front">?</div>
+                <div class="card-back">${val}</div>
+            </div>
+        `;
+
+        card.onclick = () => {
+            if (selections[activeIndex].solved) return;
+            
+            // めくり状態のトグル
+            const isFlipped = card.classList.contains('flipped');
+            
+            if (isFlipped) {
+                // すでにめくられているものをタップした場合は選択解除（裏に戻す）
+                card.classList.remove('flipped');
+                card.classList.remove('selected');
+                if (type === 'diagnosis') selections[activeIndex].diagnosis = null;
+                if (type === 'nextPlan') selections[activeIndex].nextPlan = null;
+            } else {
+                // 同じ層で既にアクティブな患者にセットされている他のカードがあれば戻す
+                const deck = type === 'diagnosis' ? diagnosisDeck : nextPlanDeck;
+                const currentVal = type === 'diagnosis' ? selections[activeIndex].diagnosis : selections[activeIndex].nextPlan;
+                
+                if (currentVal) {
+                    const prevCard = deck.querySelector(`.card[data-val="${currentVal}"]`);
+                    if (prevCard) {
+                        prevCard.classList.remove('flipped');
+                        prevCard.classList.remove('selected');
+                    }
+                }
+
+                // 新しくめくって選択
+                card.classList.add('flipped');
+                card.classList.add('selected');
+                if (type === 'diagnosis') selections[activeIndex].diagnosis = val;
+                if (type === 'nextPlan') selections[activeIndex].nextPlan = val;
+            }
+
+            syncSelectionUI();
+        };
+
+        return card;
+    }
+
+    // 患者プロファイルカードの生成
+    function renderPatients() {
+        patientsContainer.innerHTML = '';
+        selectedCases.forEach((c, idx) => {
+            const card = document.createElement('div');
+            card.className = `patient-card ${idx === activeIndex ? 'active' : ''}`;
+            card.dataset.idx = idx;
+
+            card.innerHTML = `
+                <div class="solved-badge">確定済</div>
+                <div>
+                    <div class="patient-info">患者 ${idx + 1}</div>
+                    <div class="patient-name">${c.name} (${c.age}歳・${c.gender})</div>
+                    <div class="patient-complaint" style="font-size: 11px; font-weight: 700; color: var(--accent-color); margin-bottom: 6px;">主訴：${c.chief}</div>
+                    <div class="patient-profile-snippet" title="${c.profile}">${c.profile}</div>
+                </div>
+                <div>
+                    <div class="slots-indicator-inline">
+                        <span class="slot-badge" id="slot-inq-${idx}">問診・診察</span>
+                        <span class="slot-badge" id="slot-tst-${idx}">検査</span>
+                        <span class="slot-badge" id="slot-dia-${idx}">診断</span>
+                        <span class="slot-badge" id="slot-trx-${idx}">方針</span>
+                    </div>
+                    <button class="confirm-btn" id="confirm-btn-${idx}">診療方針確定</button>
+                </div>
+            `;
+
+            // カードタップでアクティブ患者を切り替え
+            card.onclick = (e) => {
+                if (selections[idx].solved) return;
+                if (e.target.classList.contains('confirm-btn')) return; // 確定ボタンクリック時は切り替えない
+                
+                activeIndex = idx;
+                document.querySelectorAll('.patient-card').forEach(p => p.classList.remove('active'));
+                card.classList.add('active');
+                syncSelectionUI();
+            };
+
+            // 確定ボタンのイベント
+            const confirmBtn = card.querySelector('.confirm-btn');
+            confirmBtn.onclick = () => {
+                checkDiagnosis(idx);
+            };
+
+            patientsContainer.appendChild(card);
+        });
+    }
+
+    // 問診トグル制御
+    function handleInquiryToggle(key) {
+        if (selections[activeIndex].solved) return;
+        const currentInq = selections[activeIndex].inquiry;
+        const index = currentInq.indexOf(key);
+        if (index > -1) {
+            currentInq.splice(index, 1);
+        } else {
+            currentInq.push(key);
+        }
+        syncSelectionUI();
+    }
+
+    // 検査トグル制御
+    function handleTestToggle(key) {
+        if (selections[activeIndex].solved) return;
+        const currentTests = selections[activeIndex].tests;
+        const index = currentTests.indexOf(key);
+        if (index > -1) {
+            currentTests.splice(index, 1);
+        } else {
+            currentTests.push(key);
+        }
+        syncSelectionUI();
+    }
+
+    // 選択状態とUIの同期
+    function syncSelectionUI() {
+        const activeSel = selections[activeIndex];
+
+        // 1. 問診トグルボタンの選択状態更新
+        document.querySelectorAll('.inquiry-box .toggle-btn').forEach(btn => {
+            const key = btn.dataset.key;
+            if (activeSel.inquiry.includes(key)) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+
+        // 2. 検査トグルボタンの選択状態更新
+        document.querySelectorAll('.test-box .toggle-btn').forEach(btn => {
+            const key = btn.dataset.key;
+            if (activeSel.tests.includes(key)) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+
+        // 3. 診断・治療方針のフリップカードの選択状態ハイライト更新
+        document.querySelectorAll('.diagnosis-deck .card').forEach(card => {
+            const val = card.dataset.val;
+            card.classList.remove('selected');
+            
+            if (card.classList.contains('matched')) return;
+
+            if (activeSel.diagnosis === val) {
+                card.classList.add('flipped');
+                card.classList.add('selected');
+            } else {
+                const isSetByOther = selections.some((s, idx) => idx !== activeIndex && s.diagnosis === val);
+                if (!isSetByOther) {
+                    card.classList.remove('flipped');
+                } else {
+                    card.classList.add('flipped');
+                }
+            }
+        });
+
+        document.querySelectorAll('.next-plan-deck .card').forEach(card => {
+            const val = card.dataset.val;
+            card.classList.remove('selected');
+
+            if (card.classList.contains('matched')) return;
+
+            if (activeSel.nextPlan === val) {
+                card.classList.add('flipped');
+                card.classList.add('selected');
+            } else {
+                const isSetByOther = selections.some((s, idx) => idx !== activeIndex && s.nextPlan === val);
+                if (!isSetByOther) {
+                    card.classList.remove('flipped');
+                } else {
+                    card.classList.add('flipped');
+                }
+            }
+        });
+
+        // 4. 各患者カードのスロット表示と確定ボタンの活性化状態を更新
+        selections.forEach((sel, idx) => {
+            const inqEl = document.getElementById(`slot-inq-${idx}`);
+            const tstEl = document.getElementById(`slot-tst-${idx}`);
+            const diaEl = document.getElementById(`slot-dia-${idx}`);
+            const trxEl = document.getElementById(`slot-trx-${idx}`);
+
+            if (inqEl && tstEl && diaEl && trxEl) {
+                // クラスをリセット
+                inqEl.className = "slot-badge";
+                tstEl.className = "slot-badge";
+                diaEl.className = "slot-badge";
+                trxEl.className = "slot-badge";
+
+                if (sel.solved) {
+                    inqEl.textContent = "問診・診察";
+                    inqEl.classList.add('solved');
+                    tstEl.textContent = "検査";
+                    tstEl.classList.add('solved');
+                    diaEl.textContent = "診断";
+                    diaEl.classList.add('solved');
+                    trxEl.textContent = "方針";
+                    trxEl.classList.add('solved');
+                } else {
+                    // 問診・診察
+                    if (sel.inquiry.length > 0) {
+                        inqEl.textContent = `診察(${sel.inquiry.length})`;
+                        inqEl.classList.add('active-inq');
+                        inqEl.title = sel.inquiry.join('、');
+                    } else {
+                        inqEl.textContent = "問診・診察";
+                        inqEl.title = "未選択";
+                    }
+
+                    // 検査
+                    if (sel.tests.length > 0) {
+                        tstEl.textContent = `検査(${sel.tests.length})`;
+                        tstEl.classList.add('active-tst');
+                        tstEl.title = sel.tests.join('、');
+                    } else {
+                        tstEl.textContent = "検査";
+                        tstEl.title = "未選択";
+                    }
+
+                    // 診断
+                    if (sel.diagnosis) {
+                        diaEl.textContent = "診断";
+                        diaEl.classList.add('active-dia');
+                        diaEl.title = sel.diagnosis;
+                    } else {
+                        diaEl.textContent = "診断";
+                        diaEl.title = "未選択";
+                    }
+
+                    // 方針
+                    if (sel.nextPlan) {
+                        trxEl.textContent = "方針";
+                        trxEl.classList.add('active-trx');
+                        trxEl.title = sel.nextPlan;
+                    } else {
+                        trxEl.textContent = "方針";
+                        trxEl.title = "未選択";
+                    }
+                }
+            }
+
+            // 診療方針確定ボタンの活性化
+            const confirmBtn = document.getElementById(`confirm-btn-${idx}`);
+            if (confirmBtn) {
+                const isReady = sel.diagnosis && sel.nextPlan;
+                if (isReady && !sel.solved) {
+                    confirmBtn.classList.add('active');
+                } else {
+                    confirmBtn.classList.remove('active');
+                }
+            }
+        });
+    }
+
+    // 診断の答え合わせ
+    function checkDiagnosis(idx) {
+        if (selections[idx].solved) return;
+
+        const correctCase = selectedCases[idx];
+        const playerSel = selections[idx];
+
+        // 判定ロジック
+        // 1. 問診 (inquiry): 必須問診がすべてプレイヤーの選択に含まれているか
+        const isInquiryCorrect = correctCase.inquiry.every(item => playerSel.inquiry.includes(item));
+
+        // 2. 検査 (tests): 必須検査がすべてプレイヤーの選択に含まれているか
+        const isTestsCorrect = correctCase.tests.every(item => playerSel.tests.includes(item));
+
+        // 3. 診断 (diagnosis): 完全一致
+        const isDiagnosisCorrect = playerSel.diagnosis === correctCase.disease;
+
+        // 4. 方針 (nextPlan): 選択された治療法が正解リストに含まれているか (複数正解の許容)
+        const isNextPlanCorrect = correctCase.nextPlan.includes(playerSel.nextPlan);
+
+        if (isInquiryCorrect && isTestsCorrect && isDiagnosisCorrect && isNextPlanCorrect) {
+            // 正解！
+            playerSel.solved = true;
+            
+            // 該当する患者カードにsolvedクラスを付与
+            const patientCard = document.querySelector(`.patient-card[data-idx="${idx}"]`);
+            patientCard.classList.add('solved');
+            patientCard.classList.remove('active');
+
+            // 4, 5層の選択されたカードを非表示(Matched)にする
+            const diagCard = diagnosisDeck.querySelector(`.card[data-val="${playerSel.diagnosis}"]`);
+            if (diagCard) diagCard.classList.add('matched');
+
+            const treatCard = nextPlanDeck.querySelector(`.card[data-val="${playerSel.nextPlan}"]`);
+            if (treatCard) treatCard.classList.add('matched');
+
+            // 解説を表示
+            showModal(
+                "正解！",
+                `<b>【${correctCase.name}さん の診断・方針が確定しました】</b><br><br>` +
+                `・<b>診断名</b>: ${correctCase.disease}<br>` +
+                `・<b>追加問診・身体所見</b>: ${correctCase.inquiry.join(', ') || '特になし'}<br>` +
+                `・<b>推奨検査</b>: ${correctCase.tests.join(', ')}<br>` +
+                `・<b>初期治療・追加方針 (Next Plan)</b>: <br>　${correctCase.nextPlan.join('、')}<br><br>` +
+                `<div class="modal-note">📝 <b>解説:</b><br>${correctCase.note}</div>`,
+                true,
+                idx
+            );
+
+        } else {
+            // 不正解
+            miss++;
+            missCountEl.textContent = miss;
+
+            // 患者カードをブルブルさせる
+            const patientCard = document.querySelector(`.patient-card[data-idx="${idx}"]`);
+            patientCard.classList.add('shake');
+            setTimeout(() => patientCard.classList.remove('shake'), 400);
+
+            // フィードバックの組み立て (各層個別に正誤判定を提示)
+            let feedback = `<b>【${correctCase.name}さん の診療方針の評価結果】</b><br><br>`;
+            feedback += `・<b>2層（問診・身体診察）</b>: ${isInquiryCorrect ? '<span style="color: var(--primary-color); font-weight: bold;">○（適切）</span>' : '<span style="color: var(--danger-color); font-weight: bold;">×（不足あり）</span>'}<br>`;
+            feedback += `・<b>3層（初診推奨検査）</b>: ${isTestsCorrect ? '<span style="color: var(--primary-color); font-weight: bold;">○（適切）</span>' : '<span style="color: var(--danger-color); font-weight: bold;">×（不足あり）</span>'}<br>`;
+            feedback += `・<b>4層（最も高い診断名）</b>: ${isDiagnosisCorrect ? '<span style="color: var(--primary-color); font-weight: bold;">○（一致）</span>' : '<span style="color: var(--danger-color); font-weight: bold;">×（不一致）</span>'}<br>`;
+            feedback += `・<b>5層（治療・追加方針）</b>: ${isNextPlanCorrect ? '<span style="color: var(--primary-color); font-weight: bold;">○（一致）</span>' : '<span style="color: var(--danger-color); font-weight: bold;">×（不一致）</span>'}<br><br>`;
+            
+            feedback += `<div class="modal-note">📝 <b>この症例の診療のコツ:</b><br>${correctCase.note}</div>`;
+
+            // 不正解のフリップカードだけを選択解除（問診・検査トグルはそのまま保持し、追加・調整できるようにする）
+            if (!isDiagnosisCorrect) {
+                playerSel.diagnosis = null;
+            }
+            if (!isNextPlanCorrect) {
+                playerSel.nextPlan = null;
+            }
+
+            showModal("診療方針の再検討", feedback, false, idx);
+        }
+    }
+
+    // モーダルの表示
+    function showModal(title, bodyText, isSuccess, idx) {
+        modalTitle.textContent = title;
+        modalTitle.className = `modal-header ${isSuccess ? 'correct' : 'incorrect'}`;
+        modalBody.innerHTML = bodyText;
+        modal.style.display = 'flex';
+
+        modalBtn.onclick = () => {
+            modal.style.display = 'none';
+            
+            if (isSuccess) {
+                // クリア判定
+                const isAllSolved = selections.every(s => s.solved);
+                if (isAllSolved) {
+                    setTimeout(() => {
+                        alert(`コンプリート！お疲れ様でした！\n総ミス回数: ${miss} 回`);
+                        initGame();
+                    }, 300);
+                } else {
+                    // 次の未解決の患者を自動アクティブにする
+                    const nextActiveIdx = selections.findIndex(s => !s.solved);
+                    if (nextActiveIdx > -1) {
+                        activeIndex = nextActiveIdx;
+                        document.querySelectorAll('.patient-card').forEach(p => p.classList.remove('active'));
+                        const nextCard = document.querySelector(`.patient-card[data-idx="${nextActiveIdx}"]`);
+                        if (nextCard) nextCard.classList.add('active');
+                    }
+                }
+            }
+            
+            syncSelectionUI();
+        };
+    }
+
+    // --- フルオープン（5秒）処理 ---
+    if (fullOpenBtn) {
+        fullOpenBtn.onclick = () => {
+            // ボタンを無効化
+            fullOpenBtn.disabled = true;
+
+            // 非解決の全カードを取得
+            const activeCards = document.querySelectorAll('.card:not(.matched)');
+            
+            // 現在のめくり状態を記憶
+            const originalStates = [];
+            activeCards.forEach(card => {
+                originalStates.push({
+                    el: card,
+                    wasFlipped: card.classList.contains('flipped')
+                });
+                // 一時的に文字面にフリップ
+                card.classList.add('flipped');
+            });
+
+            // カードのユーザーインタラクションを一時ロック
+            const decksSection = document.querySelector('.decks-section');
+            decksSection.style.pointerEvents = 'none';
+
+            let timeLeft = 5;
+            fullOpenBtn.textContent = `オープン中... (${timeLeft})`;
+
+            const timer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    fullOpenBtn.textContent = `オープン中... (${timeLeft})`;
+                } else {
+                    clearInterval(timer);
+                    
+                    // 元のフリップ状態に戻す
+                    originalStates.forEach(state => {
+                        if (!state.wasFlipped) {
+                            state.el.classList.remove('flipped');
+                        }
+                    });
+
+                    // ロック解除
+                    decksSection.style.pointerEvents = 'auto';
+                    fullOpenBtn.disabled = false;
+                    fullOpenBtn.textContent = 'フルオープン（5秒）';
+
+                    // UIの整合性を再同期
+                    syncSelectionUI();
+                }
+            }, 1000);
+        };
+    }
+
+    // 初期起動
+    initGame();
+})();
+</script>
+</body>
+</html>
