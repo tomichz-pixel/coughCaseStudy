@@ -670,11 +670,18 @@
         missCountEl.textContent = miss;
         activeIndex = 0;
         
+        // 喘息系(cva, asthma, mild_asthma)は1つだけ選出する
+        const asthmaKeys = ['cva', 'asthma', 'mild_asthma'];
+        const otherKeys = caseKeys.filter(key => !asthmaKeys.includes(key));
+
         // 9症例から、正解問診のユニーク合計が6以下になる組み合わせを動的にフィルタリングして選出
         let selectedKeys = [];
         let attempts = 0;
         while (attempts < 100) {
-            const shuffledKeys = shuffle(caseKeys).slice(0, 4);
+            const chosenAsthmaKey = shuffle(asthmaKeys)[0];
+            const chosenOtherKeys = shuffle(otherKeys).slice(0, 3);
+            const shuffledKeys = shuffle([chosenAsthmaKey, ...chosenOtherKeys]);
+
             const tempCases = shuffledKeys.map(key => casesData[key]);
             const uniqueInquiries = [...new Set(tempCases.reduce((acc, c) => acc.concat(c.inquiry), []))];
             
@@ -687,9 +694,11 @@
             attempts++;
         }
 
-        // フォールバック（通常は不要）
+        // フォールバック
         if (selectedKeys.length === 0) {
-            selectedKeys = shuffle(caseKeys).slice(0, 4);
+            const chosenAsthmaKey = shuffle(asthmaKeys)[0];
+            const chosenOtherKeys = shuffle(otherKeys).slice(0, 3);
+            selectedKeys = shuffle([chosenAsthmaKey, ...chosenOtherKeys]);
             selectedCases = selectedKeys.map(key => casesData[key]);
         }
 
